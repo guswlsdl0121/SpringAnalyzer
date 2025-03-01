@@ -1,0 +1,14 @@
+spring:
+  rabbitmq:
+    host: localhost   # Docker Compose ????
+    port: 5672        # AMQP ?? ??
+    username: guest
+    password: guest
+    virtual-host: /
+
+    template:
+      exchange: analyzer.exchange # ?? ????? ??
+
+    listener:
+      direct:
+        prefetch: 1 # ?? ?? ??? ? ??
