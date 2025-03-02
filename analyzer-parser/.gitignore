@@ -1,0 +1,10 @@
+# Python cache files
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+
+# Specific files
+collect.py
+python_files.txt
