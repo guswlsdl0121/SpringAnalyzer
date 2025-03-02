@@ -9,7 +9,7 @@ class FileService:
         self.file_ops = FileOperations(temp_dir)
         self.logger = logging.getLogger("analyzer.file.service")
     
-    def handle_project_upload(self, project_id, file_data):
+    def extract_project(self, project_id, file_data):
         try:
             self.logger.info(f"프로젝트 처리 시작: {project_id}")
             

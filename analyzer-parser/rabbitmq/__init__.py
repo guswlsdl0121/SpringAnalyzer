@@ -2,7 +2,7 @@ from .connection import RabbitMQConnection
 from .consumer import RabbitMQConsumer
 from .service import RabbitMQService
 from config import Config
-from handler import message_handler
+from message import message_processor
 
 # RabbitMQConnection 초기화
 rabbit_connection = RabbitMQConnection(
@@ -21,7 +21,7 @@ if rabbit_connection.connect():
             Config.EXCHANGE_NAME,
             Config.ANALYSIS_QUEUE,
             Config.ROUTING_ANALYSIS_UPLOAD,
-            message_handler.handle_analysis_message
+            message_processor.process
         )
         # RabbitMQService 초기화
         rabbitmq_service = RabbitMQService(

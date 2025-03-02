@@ -5,8 +5,6 @@ import pika
 logger = logging.getLogger("rabbitmq.connection")
 
 class RabbitMQConnection:
-    """RabbitMQ 서버와의 연결을 관리하는 클래스"""
-    
     def __init__(self, host, port, username, password):
         self.host = host
         self.port = port
@@ -16,7 +14,6 @@ class RabbitMQConnection:
         self.channel = None
         
     def connect(self):
-        """RabbitMQ 서버에 연결하고 채널을 생성합니다."""
         try:
             # 연결 파라미터 설정
             credentials = pika.PlainCredentials(self.username, self.password)
@@ -39,14 +36,12 @@ class RabbitMQConnection:
             return False
     
     def get_channel(self):
-        """연결된 채널을 반환합니다."""
         if not self.channel or self.connection.is_closed:
             if not self.connect():
                 return None
         return self.channel
     
     def close(self):
-        """연결을 종료합니다."""
         if self.connection and not self.connection.is_closed:
             self.connection.close()
             logger.info("RabbitMQ 연결이 종료되었습니다.")

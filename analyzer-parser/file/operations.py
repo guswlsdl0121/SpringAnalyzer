@@ -2,9 +2,7 @@ import os
 import zipfile
 import logging
 
-class FileOperations:
-    """파일 시스템 작업을 담당하는 클래스"""
-    
+class FileOperations:    
     def __init__(self, temp_dir):
         self.temp_dir = temp_dir
         self.logger = logging.getLogger("analyzer.file.operations")

@@ -2,14 +2,13 @@ import json
 import base64
 import logging
 
-logger = logging.getLogger('analyzer.messaging.handlers')
+logger = logging.getLogger('message.receive_callback')
 
-class MessageHandler:
+class MessageProcessor:
     def __init__(self, file_service):
         self.file_service = file_service
 
-    def handle_analysis_message(self, body):
-        """비즈니스 로직 처리"""
+    def process(self, body):        
         try:
             message = json.loads(body)
             project_id = message.get("projectId")
@@ -26,7 +25,7 @@ class MessageHandler:
             
             file_data = base64.b64decode(file_content)
             
-            result = self.file_service.handle_project_upload(project_id, file_data)
+            result = self.file_service.extract_project(project_id, file_data)
             
             if result and result.success:
                 logger.info(f"프로젝트 {project_id} 처리 성공: {result.project_dir}")

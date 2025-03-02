@@ -17,7 +17,6 @@ class RabbitMQConsumer:
         self.consume_thread = None
 
     def setup(self):
-        """Exchange 및 Queue 설정"""
         try:
             self.channel.exchange_declare(exchange=self.exchange_name, exchange_type='topic', durable=True)
             self.channel.queue_declare(queue=self.queue_name, durable=True)
@@ -32,11 +31,10 @@ class RabbitMQConsumer:
             return False
 
     def consume_loop(self):
-        """소비 루프 실행"""
         try:
             self.is_consuming = True
             
-            def callback(ch, method, properties, body):
+            def callback(ch, method, body):
                 success = self.message_handler(body)
                 
                 if success:
@@ -59,7 +57,6 @@ class RabbitMQConsumer:
             self.is_consuming = False
 
     def start(self):
-        """소비 시작"""
         if not self.setup():
             return False
         
@@ -69,7 +66,6 @@ class RabbitMQConsumer:
         return True
 
     def stop(self):
-        """소비 중단"""
         if not self.is_consuming:
             return False
         

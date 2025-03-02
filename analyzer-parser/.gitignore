@@ -5,6 +5,7 @@ __pycache__/
 # Virtual environment
 venv/
 
+collect/
+
 # Specific files
-collect.py
 python_files.txt
