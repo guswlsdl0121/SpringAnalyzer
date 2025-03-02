@@ -11,6 +11,7 @@ public final class RabbitMQConstants {
     // Queue Names
     public static final String ANALYSIS_QUEUE = "analysis.queue";
     public static final String RESULT_QUEUE = "result.queue";
+
     private RabbitMQConstants() {
     }
 }
