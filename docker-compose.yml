@@ -5,9 +5,8 @@ services:
     image: rabbitmq:3-management
     container_name: rabbitmq
     ports:
-      - "5672:5672"   # AMQP 프로토콜 포트
-      - "15672:15672" # 관리 UI 포트
-      - "61613:61613" # STOMP 프로토콜 포트
+      - "5672:5672"   # AMQP 기본 통신 포트
+      - "15672:15672" # 관리 콘솔 포트
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
       - rabbitmq_log:/var/log/rabbitmq
@@ -18,9 +17,8 @@ services:
     networks:
       - analyzer-network
     command: >
-      bash -c "rabbitmq-plugins enable rabbitmq_management rabbitmq_stomp
+      bash -c "rabbitmq-plugins enable rabbitmq_management
       && rabbitmq-server"
-
 
 networks:
   analyzer-network:
