@@ -3,10 +3,11 @@ import logging
 logger = logging.getLogger('rabbitmq.service')
 
 class RabbitMQService:
-    def __init__(self, connection, config, consumers):
+    def __init__(self, connection, config, consumers, publisher=None):
         self.connection = connection
         self.config = config
         self.consumers = consumers
+        self.publisher = publisher  # publisher 인스턴스 참조
 
     def start_all_consumers(self):
         for consumer in self.consumers:
