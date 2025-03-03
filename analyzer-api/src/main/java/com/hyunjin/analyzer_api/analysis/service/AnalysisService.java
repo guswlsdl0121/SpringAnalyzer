@@ -1,9 +1,9 @@
 package com.hyunjin.analyzer_api.analysis.service;
 
-import com.hyunjin.analyzer_api.common.util.MessageSerializer;
 import com.hyunjin.analyzer_api.analysis.vo.FileName;
 import com.hyunjin.analyzer_api.analysis.vo.ProjectId;
 import com.hyunjin.analyzer_api.common.messaging.constants.RabbitMQConstants;
+import com.hyunjin.analyzer_api.common.util.MessageSerializer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
