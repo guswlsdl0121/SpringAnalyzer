@@ -5,15 +5,22 @@ spring:
       max-request-size: 50MB
 
   rabbitmq:
-    host: localhost   # Docker Compose host name
-    port: 5672        # AMQP port
+    host: localhost
+    port: 5672
     username: guest
     password: guest
     virtual-host: /
 
     template:
-      exchange: analyzer.exchange # default Exchane
+      exchange: analyzer.exchange
 
     listener:
       direct:
         prefetch: 1
+
+  thymeleaf:
+    cache: false
+
+  web:
+    resources:
+      static-locations: classpath:/static/

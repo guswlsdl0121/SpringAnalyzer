@@ -19,12 +19,17 @@ import java.util.NoSuchElementException;
 public class ResultService {
     private final ResultRepository resultRepository;
 
+    /**
+     * 분석 결과를 저장합니다.
+     *
+     * @param resultResponse 저장할 분석 결과 응답 객체
+     */
     public void saveResult(ResultResponse resultResponse) {
-        // 값 객체 생성
+        // 인코딩된 문자열로부터 분석 내용과 요약 내용 값 객체 생성
         AnalysisContent analysisContent = AnalysisContent.fromEncodedString(resultResponse);
         SummaryContent summaryContent = SummaryContent.fromEncodedString(resultResponse);
 
-        // AnalysisResult 생성
+        // AnalysisResult 엔티티 생성
         AnalysisResult result = AnalysisResult.builder()
                 .projectId(resultResponse.getProjectId())
                 .success(resultResponse.isSuccess())
@@ -35,9 +40,17 @@ public class ResultService {
                 .timestamp(LocalDateTime.now())
                 .build();
 
+        // 생성된 AnalysisResult 엔티티를 저장소에 저장
         resultRepository.save(result);
     }
 
+    /**
+     * 프로젝트 ID로 분석 결과를 조회합니다.
+     *
+     * @param projectId 조회할 프로젝트 ID
+     * @return 조회된 분석 결과의 상세 응답 객체
+     * @throws NoSuchElementException 해당 프로젝트 ID의 결과가 없을 경우 발생
+     */
     public ResultDetailResponse findResultByProjectId(String projectId) {
         return resultRepository.findByProjectId(projectId)
                 .map(result -> ResultDetailResponse.builder()
@@ -48,6 +61,7 @@ public class ResultService {
                         .summaryContent(result.summaryContent().toString())
                         .filesProcessed(result.filesProcessed())
                         .timestamp(result.timestamp())
-                        .build()).orElseThrow(NoSuchElementException::new);
+                        .build())
+                .orElseThrow(NoSuchElementException::new);
     }
 }
