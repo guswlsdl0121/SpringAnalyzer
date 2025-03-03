@@ -40,6 +40,9 @@ class Config:
     LOGS_DIR.mkdir(parents=True, exist_ok=True)
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
+    # 기존 설정에 다음 추가
+    WORKER_POOL_SIZE = int(os.getenv("WORKER_POOL_SIZE", 4))
+
 
 class DevelopmentConfig(Config):
     DEBUG = True

@@ -1,6 +1,7 @@
 # message/processor.py
 import logging
 from .util import MessageUtils
+from worker import worker_pool
 
 class MessageProcessor:
     """메시지 처리를 담당하는 서비스 클래스"""
@@ -24,10 +25,30 @@ class MessageProcessor:
             if not project_id:
                 return False
             
+            # 작업자 풀에 작업 제출
+            worker_pool.submit(
+                project_id,
+                self._process_message,
+                project_id,
+                file_data
+            )
+            
+            # 메시지는 성공적으로 받았으므로 True 반환
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"메시지 처리 중 예외 발생: {str(e)}", exc_info=True)
+            if project_id:
+                self.result_dispatcher.publish_error(project_id, f"처리 오류: {str(e)}")
+            return False
+    
+    def _process_message(self, project_id, file_data):
+        """작업자 풀에서 실행될 실제 처리 로직"""
+        try:
             # 2. 프로젝트 추출
             extraction_result = self.file_service.extract_project(project_id, file_data)
             if not extraction_result.success:
-                self.result_publisher.publish_error(project_id, extraction_result.error)
+                self.result_dispatcher.publish_error(project_id, extraction_result.error)
                 return False
             
             # 3. 프로젝트 분석
@@ -44,9 +65,8 @@ class MessageProcessor:
             else:
                 self.result_dispatcher.publish_error(project_id, analysis_result['error'])
                 return False
-            
+                
         except Exception as e:
-            self.logger.error(f"메시지 처리 중 예외 발생: {str(e)}", exc_info=True)
-            if project_id:
-                self.result_dispatcher.publish_error(project_id, f"처리 오류: {str(e)}")
+            self.logger.error(f"작업 처리 중 예외 발생: {str(e)}", exc_info=True)
+            self.result_dispatcher.publish_error(project_id, f"처리 오류: {str(e)}")
             return False

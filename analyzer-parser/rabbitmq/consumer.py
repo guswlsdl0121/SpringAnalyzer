@@ -1,105 +1,87 @@
 import logging
-import threading
 
 logger = logging.getLogger('rabbitmq.consumer')
 
-class RabbitMQConsumer:
-    def __init__(self, channel, exchange_name, queue_name, routing_key, callback_function):
-        self.channel = channel
+class RabbitMQAsyncConsumer:
+    def __init__(self, exchange_name, queue_name, routing_key, callback_function):
         self.exchange_name = exchange_name
         self.queue_name = queue_name
         self.routing_key = routing_key
         self.callback_function = callback_function
-        self.is_consuming = False
-        self.consume_thread = None
+        self.channel = None
+        self.consumer_tag = None
         
-        # Exchange와 Queue 설정
-        self.setup()
-
-    def setup(self):
-        """Exchange와 Queue를 선언하고 바인딩"""
+    def setup(self, channel):
+        """채널이 준비되면 Exchange와 Queue 설정"""
+        self.channel = channel
+        
+        # Exchange 선언
+        self.channel.exchange_declare(
+            exchange=self.exchange_name,
+            exchange_type='topic',
+            durable=True,
+            callback=self._on_exchange_declareok
+        )
+    
+    def _on_exchange_declareok(self, _unused_frame):
+        """Exchange 선언 성공 시 Queue 선언"""
+        logger.info(f"Exchange '{self.exchange_name}' 선언 완료")
+        self.channel.queue_declare(
+            queue=self.queue_name,
+            durable=True,
+            callback=self._on_queue_declareok
+        )
+    
+    def _on_queue_declareok(self, _unused_frame):
+        """Queue 선언 성공 시 바인딩 실행"""
+        logger.info(f"Queue '{self.queue_name}' 선언 완료")
+        self.channel.queue_bind(
+            queue=self.queue_name,
+            exchange=self.exchange_name,
+            routing_key=self.routing_key,
+            callback=self._on_bindok
+        )
+    
+    def _on_bindok(self, _unused_frame):
+        """바인딩 성공 시 메시지 소비 시작"""
+        logger.info(f"Queue '{self.queue_name}'가 Exchange '{self.exchange_name}'에 바인딩됨")
+        
+        # QoS 설정 - 한 번에 하나의 메시지만 처리
+        self.channel.basic_qos(
+            prefetch_count=1,
+            callback=self._on_qos_set
+        )
+    
+    def _on_qos_set(self, _unused_frame):
+        """QoS 설정 완료 시 소비 시작"""
+        logger.info("QoS 설정 완료")
+        self.consumer_tag = self.channel.basic_consume(
+            queue=self.queue_name,
+            on_message_callback=self._on_message,
+            auto_ack=False
+        )
+        logger.info(f"Consumer '{self.consumer_tag}' 시작됨")
+    
+    def _on_message(self, channel, method, properties, body):
+        """메시지 수신 시 처리 핸들러"""
+        logger.info(f"메시지 수신: routing_key={method.routing_key}")
+        
         try:
-            self.channel.exchange_declare(
-                exchange=self.exchange_name, 
-                exchange_type='topic', 
-                durable=True
-            )
-            self.channel.queue_declare(
-                queue=self.queue_name, 
-                durable=True
-            )
-            self.channel.queue_bind(
-                exchange=self.exchange_name, 
-                queue=self.queue_name, 
-                routing_key=self.routing_key
-            )
-            logger.info(f"Queue '{self.queue_name}'가 Exchange '{self.exchange_name}'에 바인딩됨")
-        except Exception as e:
-            logger.error(f"Queue 설정 실패: {str(e)}", exc_info=True)
-            raise
-
-    def message_handler(self, ch, method, properties, body):
-        """RabbitMQ로부터 받은 메시지를 처리"""
-        try:
-            logger.info(f"메시지 수신: routing_key={method.routing_key}")
+            # 메시지 처리
             success = self.callback_function(body)
             
             if success:
-                ch.basic_ack(delivery_tag=method.delivery_tag)
+                channel.basic_ack(delivery_tag=method.delivery_tag)
                 logger.info("메시지 처리 성공, ACK 전송")
             else:
-                ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+                channel.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
                 logger.warning("메시지 처리 실패, NACK 전송 (requeue=True)")
         except Exception as e:
             logger.error(f"메시지 처리 오류: {str(e)}", exc_info=True)
-            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
-
-    def start(self):
-        """메시지 소비 시작"""
-        try:
-            if self.is_consuming:
-                logger.warning("이미 메시지 소비 중입니다")
-                return
-                
-            self.channel.basic_qos(prefetch_count=1)
-            self.channel.basic_consume(
-                queue=self.queue_name,
-                on_message_callback=self.message_handler,
-                auto_ack=False
-            )
-            
-            # 별도 스레드에서 메시지 소비 시작
-            self.consume_thread = threading.Thread(
-                target=self._consume_loop,
-                daemon=True
-            )
-            self.consume_thread.start()
-            logger.info(f"'{self.queue_name}' 큐에서 메시지 소비 시작")
-            
-            return True
-        except Exception as e:
-            logger.error(f"메시지 소비 시작 실패: {str(e)}", exc_info=True)
-            return False
-
-    def _consume_loop(self):
-        """메시지 소비 루프 실행"""
-        self.is_consuming = True
-        try:
-            self.channel.start_consuming()
-        finally:
-            self.is_consuming = False
-
+            channel.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+    
     def stop(self):
-        """메시지 소비 중지"""
-        if not self.is_consuming:
-            return False
-            
-        try:
-            self.channel.stop_consuming()
-            if self.consume_thread and self.consume_thread.is_alive():
-                self.consume_thread.join(timeout=5.0)
-            logger.info(f"'{self.queue_name}' 큐 소비 중지됨")
-            return True
-        except Exception as e:
-            logger.error(f"소비 중지 중 오류: {str(e)}", exc_info=True)
-            return False
+        """소비 중지"""
+        if self.channel and self.consumer_tag:
+            self.channel.basic_cancel(self.consumer_tag)
+            logger.info(f"Consumer '{self.consumer_tag}' 중지됨")
