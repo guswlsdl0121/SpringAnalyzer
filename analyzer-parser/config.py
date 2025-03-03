@@ -1,4 +1,6 @@
 import os
+import sys
+from pathlib import Path
 from dotenv import load_dotenv
 
 # .env 파일 로드
@@ -24,10 +26,20 @@ class Config:
     ROUTING_ANALYSIS_UPLOAD = os.getenv("ROUTING_ANALYSIS_UPLOAD", "analysis.upload")
     ROUTING_RESULT_COMPLETED = os.getenv("ROUTING_RESULT_COMPLETED", "result.completed")
     ROUTING_RESULT_ERROR = os.getenv("ROUTING_RESULT_ERROR", "result.error")
-    
-    # 임시 파일 저장 경로
-    VENV_PATH = os.getenv("VIRTUAL_ENV", ".venv")
-    TEMP_DIR = os.path.join(VENV_PATH, "temp")
+
+    # 가상환경 루트 디렉토리 경로 추출 (Scripts 상위 폴더)
+    VENV_PATH = Path(sys.executable).parent.parent.resolve()  # ← 핵심 수정
+    TEMP_DIR = VENV_PATH / 'temp'
+    PROJECTS_DIR = TEMP_DIR / 'projects'
+    LOGS_DIR = TEMP_DIR / 'logs'
+    CACHE_DIR = TEMP_DIR / 'cache'
+
+    # 기본 디렉토리 생성
+    TEMP_DIR.mkdir(parents=True, exist_ok=True)
+    PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
+    LOGS_DIR.mkdir(parents=True, exist_ok=True)
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
 
 class DevelopmentConfig(Config):
     DEBUG = True

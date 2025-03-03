@@ -43,7 +43,7 @@ def analyze_single_service(source_dir, target_dir):
     project_name = source.name
 
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    output_filename = f"{timestamp}-{project_name}-analysis.xml"
+    output_filename = f"{timestamp}_{project_name}_analysis.xml"
     output_path = target / output_filename
     
     project_info = {}

@@ -34,7 +34,7 @@ class RabbitMQConsumer:
         try:
             self.is_consuming = True
             
-            def callback(ch, method, body):
+            def callback(ch, method, properties, body):
                 success = self.message_handler(body)
                 
                 if success:

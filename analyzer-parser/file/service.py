@@ -13,20 +13,21 @@ class FileService:
         try:
             self.logger.info(f"프로젝트 처리 시작: {project_id}")
             
-            # 프로젝트 디렉토리 생성
-            project_dir = self.file_ops.create_project_dir(project_id)
+            # 프로젝트 디렉토리 구조 생성
+            project_paths = self.file_ops.create_project_structure(project_id)
             
             # ZIP 파일 저장
-            zip_path = self.file_ops.save_zip_file(project_dir, project_id, file_data)
+            zip_path = self.file_ops.save_zip_file(project_paths, project_id, file_data)
             
             # ZIP 파일 압축 해제
-            self.file_ops.extract_zip(zip_path, project_dir)
+            source_dir = self.file_ops.extract_zip(zip_path, project_paths['source_dir'])
             
             # 압축 해제 결과 생성
             return ExtractionResult(
                 success=True,
                 project_id=project_id,
-                project_dir=project_dir
+                project_dir=str(project_paths['source_dir']),
+                output_dir=str(project_paths['output_dir'])
             )
             
         except Exception as e:
@@ -36,3 +37,7 @@ class FileService:
                 project_id=project_id,
                 error=str(e)
             )
+    
+    def cleanup_old_projects(self, days=7):
+        """오래된 프로젝트 파일 정리"""
+        self.file_ops.cleanup_old_projects(days_to_keep=days)
