@@ -1,4 +1,3 @@
-# rabbitmq/connection.py
 import logging
 import pika
 
@@ -29,17 +28,11 @@ class RabbitMQConnection:
             self.channel = self.connection.channel()
             
             logger.info("RabbitMQ 서버에 연결되었습니다.")
-            return True
+            return self.channel
             
         except Exception as e:
             logger.error(f"RabbitMQ 연결 실패: {str(e)}", exc_info=True)
-            return False
-    
-    def get_channel(self):
-        if not self.channel or self.connection.is_closed:
-            if not self.connect():
-                return None
-        return self.channel
+            return None
     
     def close(self):
         if self.connection and not self.connection.is_closed:

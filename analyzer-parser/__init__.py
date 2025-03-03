@@ -1,20 +1,18 @@
-import os
 import logging
 from flask import Flask
 from config import Config
-from file import file_service
-from rabbitmq import rabbitmq_service
+from rabbitmq import init_rabbitmq, close_connections
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
-
-    app.file_service = file_service
-    app.rabbitmq_service = rabbitmq_service
-
+    init_success = init_rabbitmq()
+    if not init_success:
+        app.logger.error("RabbitMQ 초기화 실패")
+    
     @app.teardown_appcontext
     def close_rabbitmq_connections(exception=None):
-        app.rabbitmq_service.close()
+        close_connections()
 
     return app
 
