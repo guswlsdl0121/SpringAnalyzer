@@ -1,6 +1,6 @@
 package com.hyunjin.analyzer_api.analysis.service;
 
-import com.hyunjin.analyzer_api.analysis.factory.AnalysisMessageFactory;
+import com.hyunjin.analyzer_api.common.util.MessageSerializer;
 import com.hyunjin.analyzer_api.analysis.vo.FileName;
 import com.hyunjin.analyzer_api.analysis.vo.ProjectId;
 import com.hyunjin.analyzer_api.common.messaging.constants.RabbitMQConstants;
@@ -13,7 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class AnalysisService {
     private final RabbitTemplate rabbitTemplate;
-    private final AnalysisMessageFactory analysisMessageFactory;
+    private final MessageSerializer messageSerializer;
 
     /**
      * 업로드된 프로젝트 파일을 처리하고 분석 요청 메시지를 큐에 발송합니다.
@@ -29,7 +29,7 @@ public class AnalysisService {
         ProjectId projectId = ProjectId.fromFileName(fileName);
 
         // 분석 요청 메시지 생성
-        String message = analysisMessageFactory.createRequest(projectId, file);
+        String message = messageSerializer.serializeAnalysisRequest(projectId, file);
 
         // RabbitMQ를 통해 분석 요청 메시지 전송
         rabbitTemplate.convertAndSend(
