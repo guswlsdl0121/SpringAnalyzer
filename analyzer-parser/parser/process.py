@@ -30,7 +30,7 @@ class ParserProcess:
         self.summary_generator = SummaryGenerator()
         self.data_generator = FullDataGenerator()
     
-    def process_project(self, project_id, source_dir, output_dir):
+    def process_project(self, source_dir, output_dir):
         """전체 파싱 프로세스 실행"""
         try:
             # 1. 파일 수집

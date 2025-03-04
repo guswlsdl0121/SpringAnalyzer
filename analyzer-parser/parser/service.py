@@ -17,7 +17,7 @@ class ParserService:
             target_dir.mkdir(parents=True, exist_ok=True)
             
             # 파싱 프로세스 실행
-            result = self.parser_process.process_project(project_id, source_dir, output_dir)
+            result = self.parser_process.process_project(source_dir, output_dir)
             
             if result['success']:
                 self.logger.info(f"프로젝트 {project_id} 파싱 완료: JSON={result['analysis_file']}, 요약={result['summary_file']}")
