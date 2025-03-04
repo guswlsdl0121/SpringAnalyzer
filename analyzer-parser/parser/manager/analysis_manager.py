@@ -23,7 +23,7 @@ from parser.extractors.todo_extractor import extract_todos
 # 생성기 모듈 임포트
 from parser.generators.summary_generator import (extract_architecture_summary,
                                         analyze_spring_boot_features)
-from parser.generators.xml_generator import generate_xml_output
+from parser.generators.all_analysis_generator import generate_xml_output
 
 def analyze_single_service(source_dir, target_dir):
     """
@@ -38,11 +38,15 @@ def analyze_single_service(source_dir, target_dir):
     exclude_extensions = {'.class', '.jar', '.war', '.exe', '.dll', '.so', '.dylib',
                          '.png', '.jpg', '.jpeg', '.gif', '.ico', '.pdf', '.log', '.iml'}
     
-    # 프로젝트 이름 추출 - 간단히 마지막 디렉토리 이름 사용
-    project_name = source.name
+    # 프로젝트 이름 추출 - 로컬 파서와 동일한 방식으로 변경
+    path_parts = str(source_dir).split('/')
+    if len(path_parts) >= 4:
+        project_name = path_parts[3]  # 4번째 디렉터리 이름 (인덱스 3)
+    else:
+        project_name = source.name  # 기본적으로 마지막 디렉터리 이름
 
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    output_filename = f"{timestamp}_{project_name}_analysis.xml"
+    output_filename = f"{timestamp}-{project_name}-analysis.xml"  # 하이픈 사용으로 통일
     output_path = target / output_filename
     
     project_info = {}
@@ -61,18 +65,17 @@ def analyze_single_service(source_dir, target_dir):
             except:
                 pass
     
-    # 중요 설정 파일 목록
-    important_files = ['build.gradle', 'build.gradle.kts', 'settings.gradle', 'pom.xml', 
+    # 중요 설정 파일 목록 - 로컬 파서와 동일하게 설정
+    important_files = ['build.gradle', 'build.gradle.kts', 'settings.gradle', 'settings.gradle.kts', 'pom.xml', 
                       'application.yml', 'application.yaml', 'application.properties']
     
-    # 핵심 파일만 수집
+    # 파일 수집 로직 - 로컬 파서와 유사하게 조정
     for path in source.rglob('*'):
-        # src 디렉토리 내부 파일 또는 중요 설정 파일인 경우에만 처리
+        # 파일 수집 조건 확인
         if path.is_file() and \
            not any(exclude_dir in path.parts for exclude_dir in exclude_dirs) and \
            path.name not in exclude_files and \
-           (path.suffix.lower() not in exclude_extensions or path.name in important_files) and \
-           ('src' in path.parts or path.name in important_files or 'config' in path.parts):
+           (path.suffix.lower() not in exclude_extensions or path.name in important_files):
             try:
                 relative_path = path.relative_to(source)
                 content = path.read_text(encoding='utf-8', errors='ignore')
@@ -83,7 +86,7 @@ def analyze_single_service(source_dir, target_dir):
                     'content': content
                 }
 
-                if path.name in ['build.gradle', 'build.gradle.kts', 'settings.gradle']:
+                if path.name in ['build.gradle', 'build.gradle.kts', 'settings.gradle', 'settings.gradle.kts']:
                     project_info = parse_gradle_file(content)
                     file_info['file_type'] = 'build'
                 elif path.name == 'pom.xml':
@@ -116,6 +119,8 @@ def analyze_single_service(source_dir, target_dir):
                 elif path.suffix in ['.yml', '.yaml', '.properties']:
                     config = analyze_config_file(str(path), content)
                     file_info['file_type'] = 'config'
+                elif path.suffix in ['.html', '.js', '.css']:
+                    file_info['file_type'] = 'resource'
                 else:
                     file_info['file_type'] = 'resource'
                 

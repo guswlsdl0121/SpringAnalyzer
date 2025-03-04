@@ -1,6 +1,4 @@
-"""
-코드 복잡성과 코드 특성을 분석하기 위한 모듈
-"""
+# parser/analyzers/code_analyzer.py
 import re
 
 def calculate_code_complexity(content):
@@ -9,7 +7,7 @@ def calculate_code_complexity(content):
     """
     complexity = {
         'lines': len(content.splitlines()),
-        'methods': len(re.findall(r'\b(public|private|protected)\s+\w+\s+\w+\s*\(', content)),
+        'methods': len(re.findall(r'\b(public|private|protected)\s+[\w<>\[\]]+\s+\w+\s*\([^)]*\)\s*(\{|throws)', content)),
         'conditional_branches': len(re.findall(r'\b(if|else if|case)\b', content)),
         'loops': len(re.findall(r'\b(for|while|do)\b', content)),
         'try_catch': len(re.findall(r'\btry\b', content))
