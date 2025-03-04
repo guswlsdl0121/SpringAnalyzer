@@ -1,103 +1,46 @@
-"""
-프로젝트 분석 결과에서 요약을 생성하기 위한 모듈
-"""
-import re
-from collections import defaultdict
+import logging
+from ..models.summary import SummaryData
 
-def extract_architecture_summary(files_info):
-    """
-    분석된 정보에서 고수준 아키텍처 요약 생성
-    """
-    # 유형별 구성 요소 수 계산
-    component_counts = defaultdict(int)
-    for file in files_info:
-        if file.get('file_type'):
-            component_counts[file.get('file_type')] += 1
-    
-    # 주요 데이터 흐름 식별
-    typical_flows = []
-    if component_counts.get('controller', 0) > 0 and component_counts.get('service', 0) > 0:
-        flow = "Controller → Service"
-        if component_counts.get('repository', 0) > 0:
-            flow += " → Repository"
-        typical_flows.append(flow)
-    
-    # 공통 횡단 관심사 식별
-    cross_cutting = []
-    if component_counts.get('aspect', 0) > 0:
-        cross_cutting.append("Aspect-Oriented Programming (AOP)")
-    if component_counts.get('interceptor', 0) > 0:
-        cross_cutting.append("Interceptors")
-    if any('config' in f['path'].lower() for f in files_info if 'path' in f):
-        cross_cutting.append("Centralized Configuration")
-    
-    summary = {
-        'component_counts': dict(component_counts),
-        'typical_flows': typical_flows,
-        'cross_cutting_concerns': cross_cutting
-    }
-    
-    return summary
+logger = logging.getLogger("analyzer.parser.generators.summary")
 
-def analyze_spring_boot_features(files_info):
-    """
-    Spring Boot 특화 기능 및 패턴 분석
-    """
-    spring_features = {
-        'auto_configuration': [],
-        'dependency_injection_patterns': [],
-        'profiles': [],
-        'properties_usage': [],
-        'exception_handling': []
-    }
+class SummaryGenerator:
+    """요약 데이터 생성 클래스"""
     
-    # 모든 Java 파일 순회
-    for file in files_info:
-        if file.get('file_type') not in ['controller', 'service', 'repository', 'config', 'entity']:
-            continue
-            
-        content = file.get('content', '')
+    def generate(self, project_name, project_info, structure_info, endpoints, business_objects, java_files):
+        """요약 데이터 생성"""
+        summary = SummaryData(project_name)
         
-        # 자동 구성 감지
-        if '@EnableAutoConfiguration' in content or '@SpringBootApplication' in content:
-            spring_features['auto_configuration'].append(file.get('path'))
+        # 빌드 정보 업데이트
+        summary.update_build_info(
+            project_info.get('group'),
+            project_info.get('version'),
+            project_info.get('springBootVersion'),
+            project_info.get('javaVersion')
+        )
         
-        # 의존성 주입 패턴 감지
-        di_patterns = {
-            'constructor': '@Autowired' in content and 'public ' + file.get('class_info', {}).get('name', '') in content,
-            'field': re.search(r'@Autowired\s+private', content) is not None,
-            'setter': re.search(r'@Autowired\s+(?:public|protected|private)\s+void\s+set', content) is not None
-        }
+        # 컴포넌트 카운트 업데이트
+        component_counts = {component: len(paths) for component, paths in structure_info.items() if paths}
+        summary.update_component_counts(component_counts)
         
-        if any(di_patterns.values()):
-            spring_features['dependency_injection_patterns'].append({
-                'class': file.get('class_info', {}).get('name', 'Unknown'),
-                'patterns': [k for k, v in di_patterns.items() if v]
-            })
+        # 의존성 정보 업데이트
+        summary.update_dependencies(project_info.get('dependencies', []))
         
-        # 프로필 사용 감지
-        if '@Profile' in content:
-            profiles = re.findall(r'@Profile\(["\']([^"\']+)["\']\)', content)
-            if profiles:
-                spring_features['profiles'].append({
-                    'class': file.get('class_info', {}).get('name', 'Unknown'),
-                    'profiles': profiles
-                })
+        # API 엔드포인트 추가
+        for endpoint in endpoints:
+            summary.add_api_endpoint(endpoint['method'], endpoint['path'])
         
-        # 프로퍼티 사용 감지
-        if '@Value' in content:
-            properties = re.findall(r'@Value\(["\'](\$\{[^"\']+\})["\']', content)
-            if properties:
-                spring_features['properties_usage'].append({
-                    'class': file.get('class_info', {}).get('name', 'Unknown'),
-                    'properties': properties
-                })
+        # 비즈니스 객체 추가
+        for bo in business_objects:
+            summary.add_business_object(bo['name'])
         
-        # 예외 처리 패턴 감지
-        if '@ExceptionHandler' in content or '@ControllerAdvice' in content:
-            spring_features['exception_handling'].append({
-                'class': file.get('class_info', {}).get('name', 'Unknown'),
-                'global': '@ControllerAdvice' in content
-            })
-    
-    return spring_features
+        # Java 파일 메트릭 추가
+        for java_file in java_files:
+            complexity = java_file.get('complexity', {})
+            if complexity:
+                summary.add_java_file_metrics(
+                    method_count=complexity.get('methods', 0),
+                    cyclomatic_complexity=complexity.get('cyclomatic', 0),
+                    file_path=java_file['path']
+                )
+        
+        return summary
