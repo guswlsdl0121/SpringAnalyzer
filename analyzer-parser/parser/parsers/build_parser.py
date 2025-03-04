@@ -32,7 +32,7 @@ def parse_gradle_file(content):
         info['dependencies'].append(f"{dep.group(1)}: {dep.group(2)}")
     
     # Spring Boot 버전 추출
-    spring_boot_pattern = r"org\.springframework\.boot['\"] version ['\"](.*?)['\"]"
+    spring_boot_pattern = r"(?:org\.springframework\.boot['\"] version ['\"]|id\(['\"]org\.springframework\.boot['\"](?:\) version ['\"])|id\s*=\s*['\"]*org\.springframework\.boot['\"]*(?:\s*version\s*=\s*['\"]))(.*?)['\"]"
     spring_boot_match = re.search(spring_boot_pattern, content)
     if spring_boot_match:
         info['springBootVersion'] = spring_boot_match.group(1)
